@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NetGuard Lab: simulador educativo de redes y ciberseguridad en el navegador.">
+<title>NetGuard Lab | Simulador de redes</title>
+<style>
+:root{
+  --bg:#080d18;--panel:#101a2b;--panel2:#0c1423;--line:#24334c;
+  --text:#edf4ff;--muted:#91a3bd;--mint:#62f0c1;--blue:#6ca8ff;
+  --yellow:#ffd166;--red:#ff6b7a;--green:#53e0a0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 15% 0%,#12243b 0,transparent 38%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:1500px;margin:auto;padding:22px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:43px;height:43px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--mint),#68a7ff);color:#07111c;font-size:23px;font-weight:900;box-shadow:0 0 30px #62f0c122}
+h1{font-size:21px;letter-spacing:.2px;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#142138;color:var(--text);padding:9px 12px;border-radius:9px;transition:.15s}
+.btn:hover{border-color:#55708f;transform:translateY(-1px)}
+.btn.primary{background:var(--mint);color:#06131a;border-color:var(--mint);font-weight:750}
+.btn.danger{color:#ff9ba5;border-color:#693442;background:#2b1723}
+.btn.small{font-size:12px;padding:6px 9px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.metric,.panel{border:1px solid var(--line);background:linear-gradient(145deg,#111d30,#0d1626);border-radius:15px}
+.metric{padding:15px 17px;position:relative;overflow:hidden}
+.metric:after{content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-20px;top:-25px;background:#62f0c10b}
+.metric-label{color:var(--muted);font-size:12px}.metric-value{font-size:27px;font-weight:750;letter-spacing:-.8px;margin-top:4px}.metric-note{font-size:11px;color:#7286a3}
+.layout{display:grid;grid-template-columns:245px minmax(0,1fr) 285px;gap:14px;align-items:start}
+.panel{padding:15px;min-width:0}.panel-title{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:750;margin-bottom:13px}
+.eyebrow{font-size:10px;letter-spacing:1.5px;color:var(--mint);text-transform:uppercase;font-weight:800}
+.device-list{display:grid;gap:8px}
+.device-option{display:flex;align-items:center;gap:10px;text-align:left;width:100%;border:1px solid var(--line);background:#0c1525;color:var(--text);border-radius:10px;padding:10px}
+.device-option:hover{border-color:var(--mint);background:#12243a}
+.device-icon{width:34px;height:34px;border-radius:9px;background:#172a42;display:grid;place-items:center;font-size:18px}
+.device-option strong{display:block;font-size:12px}.device-option small{display:block;color:var(--muted);font-size:10px}
+.hint{font-size:11px;color:var(--muted);margin:12px 0 0}
+.toolrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.canvas-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.canvas-head h2{font-size:15px;margin:0}.status-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #285b4c;background:#102b2b;color:var(--mint);border-radius:999px;padding:4px 8px;font-size:10px}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.network-canvas{height:520px;position:relative;overflow:hidden;border:1px solid #223450;border-radius:12px;background-color:#0a1322;background-image:linear-gradient(#23365230 1px,transparent 1px),linear-gradient(90deg,#23365230 1px,transparent 1px),radial-gradient(ellipse at 50% 40%,#17314b55,transparent 60%);background-size:24px 24px,24px 24px,auto}
+#links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.link{stroke:#42607e;stroke-width:2.2}.link.down{stroke:var(--red);stroke-dasharray:6 5;opacity:.8}.link.blocked{stroke:var(--yellow);stroke-dasharray:4 5}
+.node{position:absolute;width:112px;min-height:88px;transform:translate(-50%,-50%);border:1px solid #2c4564;background:linear-gradient(145deg,#192b43,#101c2f);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:grab;user-select:none;box-shadow:0 8px 24px #0003;z-index:2}
+.node:active{cursor:grabbing}.node.selected{border-color:var(--mint);box-shadow:0 0 0 2px #62f0c128,0 8px 25px #0005}
+.node.offline{border-color:#9a4655;filter:saturate(.6)}.node.offline:after{content:"OFFLINE";position:absolute;top:-8px;right:-5px;background:var(--red);color:#200b10;border-radius:5px;font-size:8px;font-weight:900;padding:2px 4px}
+.node .glyph{font-size:25px;line-height:1.2}.node strong{font-size:11px}.node small{font-size:10px;color:var(--muted)}
+.node .state{position:absolute;left:8px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--green)}
+.node.offline .state{background:var(--red)}
+.canvas-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}
+.inspector-empty{border:1px dashed #2b405c;border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:12px}
+.field{display:grid;gap:5px;margin:11px 0}.field label{font-size:11px;color:var(--muted)}.field input,.field select{width:100%;background:#0a1423;border:1px solid var(--line);color:var(--text);padding:9px;border-radius:8px;outline:none}.field input:focus,.field select:focus{border-color:var(--mint)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.divider{height:1px;background:var(--line);margin:15px 0}
+.rules{display:grid;gap:8px}.rule{background:#0a1423;border:1px solid var(--line);padding:9px;border-radius:9px;font-size:11px;display:flex;justify-content:space-between;gap:8px;align-items:center}.rule b{display:block}.rule small{color:var(--muted)}
+.toggle{appearance:none;width:31px;height:18px;background:#314158;border-radius:99px;position:relative;cursor:pointer;flex:none}.toggle:checked{background:#227d68}.toggle:before{content:"";position:absolute;width:12px;height:12px;left:3px;top:3px;border-radius:50%;background:white;transition:.15s}.toggle:checked:before{left:16px}
+.log-panel{margin-top:14px}.log-list{display:grid;gap:7px;max-height:180px;overflow:auto}.log-entry{display:grid;grid-template-columns:70px 1fr;gap:10px;font-size:11px;padding:7px 8px;border-radius:7px;background:#0a1423;border-left:2px solid #3b5878}.log-entry.good{border-left-color:var(--green)}.log-entry.warn{border-left-color:var(--yellow)}.log-entry.bad{border-left-color:var(--red)}.log-time{color:#7287a4;font-variant-numeric:tabular-nums}.log-msg{color:#c6d3e7}
+.tag{display:inline-block;font-size:9px;border-radius:5px;padding:2px 5px;margin-left:5px;background:#172943;color:var(--blue)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);background:#e6fff6;color:#06231a;padding:10px 15px;border-radius:10px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:20;box-shadow:0 10px 35px #0005}.toast.show{opacity:1;transform:translate(-50%,0)}
+footer{text-align:center;color:#647895;font-size:11px;padding:24px 10px}
+@media(max-width:1100px){.layout{grid-template-columns:220px minmax(0,1fr)}.right-col{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:14px}.right-col .panel{height:fit-content}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.app{padding:12px}.layout{grid-template-columns:1fr}.right-col{grid-column:auto;display:grid;grid-template-columns:1fr}.network-canvas{height:440px}.metrics{gap:8px}.metric{padding:12px}.metric-value{font-size:23px}.hero-space{display:none}.top-actions{width:100%}.top-actions .btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">⌘</div>
+      <div><h1>NetGuard <span style="color:var(--mint)">Lab</span></h1><div class="sub">SIMULADOR EDUCATIVO DE REDES Y CIBERSEGURIDAD</div></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="resetBtn">↻ Reiniciar laboratorio</button>
+      <button class="btn primary" id="exportBtn">↓ Exportar topología JSON</button>
+    </div>
+  </header>
+
+  <section class="metrics">
+    <div class="metric"><div class="metric-label">Dispositivos</div><div class="metric-value" id="metricDevices">5</div><div class="metric-note">Elementos en la topología</div></div>
+    <div class="metric"><div class="metric-label">Conexiones activas</div><div class="metric-value" id="metricLinks">4</div><div class="metric-note">Enlaces simulados</div></div>
+    <div class="metric"><div class="metric-label">Incidencias</div><div class="metric-value" id="metricIssues">0</div><div class="metric-note">Equipos desconectados</div></div>
+    <div class="metric"><div class="metric-label">Reglas firewall</div><div class="metric-value" id="metricRules">3</div><div class="metric-note">Políticas locales simuladas</div></div>
+  </section>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-title"><span>Dispositivos</span><span class="eyebrow">01 / ADD</span></div>
+      <div class="device-list">
+        <button class="device-option" data-add="router"><span class="device-icon">🌐</span><span><strong>Router</strong><small>Puerta de enlace</small></span></button>
+        <button class="device-option" data-add="switch"><span class="device-icon">🔀</span><span><strong>Switch</strong><small>Conmutador LAN</small></span></button>
+        <button class="device-option" data-add="server"><span class="device-icon">🗄️</span><span><strong>Servidor</strong><small>Servicio / aplicación</small></span></button>
+        <button class="device-option" data-add="pc"><span class="device-icon">💻</span><span><strong>Ordenador</strong><small>Equipo cliente</small></span></button>
+        <button class="device-option" data-add="firewall"><span class="device-icon">🛡️</span><span><strong>Firewall</strong><small>Filtro de tráfico simulado</small></span></button>
+        <button class="device-option" data-add="cloud"><span class="device-icon">☁️</span><span><strong>Internet</strong><small>Red externa simulada</small></span></button>
+      </div>
+      <p class="hint">Selecciona un dispositivo para añadirlo al lienzo. Arrastra los nodos para ordenar la topología.</p>
+      <div class="divider"></div>
+      <div class="panel-title"><span>Herramientas</span></div>
+      <button class="btn" style="width:100%;margin-bottom:8px" id="connectBtn">↔ Conectar dos equipos</button>
+      <button class="btn" style="width:100%;margin-bottom:8px" id="pingBtn">⌁ Simular ping</button>
+      <button class="btn" style="width:100%" id="scanBtn">⌕ Diagnóstico de red</button>
+      <p class="hint" id="toolHint">Para conectar: activa el modo y selecciona dos nodos.</p>
+    </aside>
+
+    <section class="panel">
+      <div class="canvas-head">
+        <div><div class="eyebrow">02 / TOPOLOGÍA</div><h2>Mapa de red</h2></div>
+        <span class="status-pill"><span class="dot"></span> SIMULACIÓN LOCAL</span>
+      </div>
+      <div class="network-canvas" id="networkCanvas" aria-label="Lienzo de topología de red">
+        <svg id="links" aria-hidden="true"></svg>
+      </div>
+      <div class="canvas-foot"><span>● Verde: online &nbsp; ● Rojo: offline</span><span>Selecciona un nodo para editarlo</span></div>
+      <div class="log-panel">
+        <div class="panel-title"><span>Actividad reciente</span><button class="btn small" id="clearLogsBtn">Limpiar</button></div>
+        <div class="log-list" id="logs"></div>
+      </div>
+    </section>
+
+    <aside class="right-col">
+      <section class="panel">
+        <div class="panel-title"><span>Inspector</span><span class="eyebrow">03 / CONFIG</span></div>
+        <div id="inspector"><div class="inspector-empty">Selecciona un dispositivo del mapa para ver y editar su configuración.</div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-title"><span>Reglas del firewall</span><span class="eyebrow">04 / POLICY</span></div>
+        <p class="hint" style="margin-top:0;margin-bottom:12px">Estas reglas solo afectan a las pruebas simuladas dentro de esta página; no filtran tráfico real.</p>
+        <div class="rules" id="rules"></div>
+        <div class="divider"></div>
+        <div class="field"><label for="ruleDirection">Dirección</label><select id="ruleDirection"><option value="any">Cualquier origen</option><option value="lan">LAN → servidor</option><option value="internet">Internet → LAN</option></select></div>
+        <div class="field"><label for="ruleAction">Acción</label><select id="ruleAction"><option value="allow">Permitir</option><option value="deny">Bloquear</option></select></div>
+        <button class="btn primary" style="width:100%" id="addRuleBtn">+ Añadir regla</button>
+      </section>
+    </aside>
+  </div>
+  <footer>NetGuard Lab · Proyecto educativo de portfolio · No interactúa con redes reales</footer>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(() => {
+  const canvas = document.getElementById('networkCanvas');
+  const svg = document.getElementById('links');
+  const inspector = document.getElementById('inspector');
+  const logsEl = document.getElementById('logs');
+  const toastEl = document.getElementById('toast');
+  const icons = {router:'🌐',switch:'🔀',server:'🗄️',pc:'💻',firewall:'🛡️',cloud:'☁️'};
+  const labels = {router:'Router',switch:'Switch',server:'Servidor',pc:'Ordenador',firewall:'Firewall',cloud:'Internet'};
+  let nextId = 6, selectedId = null, connectMode = false, pingMode = false, connectFirst = null, logs = [], toastTimer;
+  let devices = [
+    {id:1,type:'cloud',name:'Internet',ip:'203.0.113.1',role:'Red externa',online:true,x:18,y:18},
+    {id:2,type:'firewall',name:'Firewall',ip:'192.168.1.1',role:'Filtrado perimetral',online:true,x:50,y:18},
+    {id:3,type:'router',name:'Router LAN',ip:'192.168.1.254',role:'Puerta de enlace',online:true,x:81,y:18},
+    {id:4,type:'switch',name:'Switch principal',ip:'192.168.1.2',role:'Conmutador',online:true,x:50,y:51},
+    {id:5,type:'server',name:'Servidor web',ip:'192.168.1.10',role:'HTTP / HTTPS',online:true,x:29,y:81},
+    {id:6,type:'pc',name:'PC cliente',ip:'192.168.1.20',role:'Estación de trabajo',online:true,x:72,y:81}
+  ];
+  nextId = 7;
+  let links = [{a:1,b:2},{a:2,b:3},{a:2,b:4},{a:4,b:5},{a:4,b:6}];
+  let rules = [
+    {id:1,direction:'internet',action:'deny',enabled:true,label:'Bloquear conexiones entrantes desde Internet'},
+    {id:2,direction:'lan',action:'allow',enabled:true,label:'Permitir tráfico LAN hacia servidor'},
+    {id:3,direction:'any',action:'allow',enabled:true,label:'Permitir tráfico general (demo)'}
+  ];
+  function time(){return new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+  function log(message,kind='info'){logs.unshift({time:time(),message,kind});logs=logs.slice(0,40);renderLogs();}
+  function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2200);}
+  function device(id){return devices.find(d=>d.id===Number(id));}
+  function linked(a,b){return links.some(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a));}
+  function pathExists(start,end){
+    const seen=new Set([start]),q=[start];
+    while(q.length){const id=q.shift();if(id===end)return true;
+      links.filter(l=>l.a===id||l.b===id).forEach(l=>{const other=l.a===id?l.b:l.a, d=device(other);if(d&&d.online&&!seen.has(other)&&device(id).online){seen.add(other);q.push(other);}});
+    }return false;
+  }
+  function render(){
+    renderNodes();renderLinks();renderInspector();renderRules();renderMetrics();
+  }
+  function renderNodes(){
+    canvas.querySelectorAll('.node').forEach(n=>n.remove());
+    devices.forEach(d=>{
+      const n=document.createElement('button');n.type='button';n.className='node'+(d.id===selectedId?' selected':'')+(!d.online?' offline':'');
+      n.style.left=d.x+'%';n.style.top=d.y+'%';n.dataset.id=d.id;
+      n.innerHTML=`<span class="state"></span><span class="glyph">${icons[d.type]}</span><strong>${escapeHtml(d.name)}</strong><small>${escapeHtml(d.ip)}</small>`;
+      n.title='Seleccionar '+d.name+'; arrastra para mover';
+      n.addEventListener('click',e=>{if(dragged){dragged=false;return;}handleNodeClick(d.id);});
+      n.addEventListener('pointerdown',startDrag);
+      canvas.appendChild(n);
+    });
+  }
+  function renderLinks(){
+    const w=canvas.clientWidth,h=canvas.clientHeight;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='';
+    links.forEach(l=>{
+      const a=device(l.a),b=device(l.b);if(!a||!b)return;
+      const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',a.x/100*w);line.setAttribute('y1',a.y/100*h);line.setAttribute('x2',b.x/100*w);line.setAttribute('y2',b.y/100*h);
+      line.setAttribute('class','link'+((!a.online||!b.online)?' down':''));
+      svg.appendChild(line);
+    });
+  }
+  function renderMetrics(){
+    document.getElementById('metricDevices').textContent=devices.length;
+    document.getElementById('metricLinks').textContent=links.filter(l=>device(l.a)?.online&&device(l.b)?.online).length;
+    document.getElementById('metricIssues').textContent=devices.filter(d=>!d.online).length;
+    document.getElementById('metricRules').textContent=rules.filter(r=>r.enabled).length;
+  }
+  function renderLogs(){
+    logsEl.innerHTML=logs.length?logs.map(l=>`<div class="log-entry ${l.kind}"><span class="log-time">${l.time}</span><span class="log-msg">${escapeHtml(l.message)}</span></div>`).join(''):'<div class="inspector-empty">Todavía no hay actividad. Ejecuta una prueba para empezar.</div>';
+  }
+  function renderInspector(){
+    const d=device(selectedId);if(!d){inspector.innerHTML='<div class="inspector-empty">Selecciona un dispositivo del mapa para ver y editar su configuración.</div>';return;}
+    inspector.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div class="device-icon">${icons[d.type]}</div><div><strong>${escapeHtml(d.name)}</strong><div class="sub">${labels[d.type]} · ID ${d.id}</div></div></div>
+      <div class="field"><label for="devName">Nombre del dispositivo</label><input id="devName" maxlength="35" value="${escapeAttr(d.name)}"></div>
+      <div class="field"><label for="devIp">Dirección IPv4 (simulada)</label><input id="devIp" value="${escapeAttr(d.ip)}" maxlength="40"></div>
+      <div class="field"><label for="devRole">Función</label><input id="devRole" value="${escapeAttr(d.role)}" maxlength="50"></div>
+      <div class="field"><label>Estado</label><button class="btn ${d.online?'':'danger'}" id="toggleOnline" style="width:100%">${d.online?'● Online — poner offline':'○ Offline — poner online'}</button></div>
+      <div class="two"><button class="btn small" id="saveDevice">Guardar</button><button class="btn small danger" id="deleteDevice">Eliminar</button></div>
+      <div class="hint">Cambiar el estado simula una incidencia y afecta a los pings y enlaces del laboratorio.</div>`;
+    document.getElementById('saveDevice').onclick=()=>{
+      const name=document.getElementById('devName').value.trim(),ip=document.getElementById('devIp').value.trim(),role=document.getElementById('devRole').value.trim();
+      if(!name||!ip){toast('Nombre e IP son obligatorios');return;}
+      d.name=name;d.ip=ip;d.role=role||'Sin función definida';log(`Configuración actualizada: ${d.name} (${d.ip}).`,'good');render();toast('Dispositivo actualizado');
+    };
+    document.getElementById('toggleOnline').onclick=()=>{d.online=!d.online;log(`${d.name} ahora está ${d.online?'ONLINE':'OFFLINE'}.`,d.online?'good':'bad');render();};
+    document.getElementById('deleteDevice').onclick=()=>{if(!confirm(`¿Eliminar ${d.name} y sus conexiones?`))return;devices=devices.filter(x=>x.id!==d.id);links=links.filter(l=>l.a!==d.id&&l.b!==d.id);selectedId=null;log(`Dispositivo eliminado: ${d.name}.`,'warn');render();};
+  }
+  function renderRules(){
+    const el=document.getElementById('rules');
+    el.innerHTML=rules.map(r=>`<div class="rule"><div><b>${r.action==='deny'?'⛔ Bloquear':'✓ Permitir'} <span class="tag">${r.direction==='any'?'Cualquiera':r.direction==='lan'?'LAN → servidor':'Internet → LAN'}</span></b><small>${escapeHtml(r.label)}</small></div><input class="toggle" type="checkbox" data-rule="${r.id}" ${r.enabled?'checked':''} aria-label="Activar regla"></div>`).join('');
+    el.querySelectorAll('[data-rule]').forEach(input=>input.addEventListener('change',()=>{const r=rules.find(x=>x.id===Number(input.dataset.rule));r.enabled=input.checked;log(`Regla ${r.id} ${r.enabled?'activada':'desactivada'}: ${r.label}.`,r.enabled?'good':'warn');renderMetrics();}));
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function escapeAttr(s){return escapeHtml(s);}
+  let dragInfo=null,dragged=false;
+  function startDrag(e){
+    if(e.button!==0)return;const d=device(e.currentTarget.dataset.id);if(!d)return;
+    dragInfo={id:d.id,startX:e.clientX,startY:e.clientY,origX:d.x,origY:d.y};
+    dragged=false;e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.addEventListener('pointermove',moveDrag);
+    e.currentTarget.addEventListener('pointerup',endDrag,{once:true});
+    e.currentTarget.addEventListener('pointercancel',endDrag,{once:true});
+  }
+  function moveDrag(e){
+    if(!dragInfo)return;
+    if(Math.abs(e.clientX-dragInfo.startX)+Math.abs(e.clientY-dragInfo.startY)>4)dragged=true;
+    if(!dragged)return;
+    const r=canvas.getBoundingClientRect(),d=device(dragInfo.id);
+    d.x=Math.max(8,Math.min(92,dragInfo.origX+(e.clientX-dragInfo.startX)/r.width*100));
+    d.y=Math.max(10,Math.min(90,dragInfo.origY+(e.clientY-dragInfo.startY)/r.height*100));
+    const n=canvas.querySelector(`.node[data-id="${d.id}"]`);if(n){n.style.left=d.x+'%';n.style.top=d.y+'%';}
+    renderLinks();
+  }
+  function endDrag(e){if(e.currentTarget) e.currentTarget.removeEventListener('pointermove',moveDrag);if(dragged){log(`Se ha movido ${device(dragInfo.id)?.name||'un dispositivo'} en la topología.`);}dragInfo=null;}
+  function handleNodeClick(id){
+    if(connectMode){
+      if(connectFirst===null){connectFirst=id;selectedId=id;toast('Ahora selecciona el segundo equipo');renderNodes();return;}
+      if(connectFirst===id){toast('Selecciona un equipo diferente');return;}
+      if(linked(connectFirst,id)){toast('Estos equipos ya están conectados');connectFirst=null;return;}
+      links.push({a:connectFirst,b:id});log(`Enlace creado: ${device(connectFirst).name} ↔ ${device(id).name}.`,'good');connectFirst=null;connectMode=false;document.getElementById('connectBtn').classList.remove('primary');document.getElementById('toolHint').textContent='Enlace creado. Puedes seguir editando la red.';render();return;
+    }
+    if(pingMode){
+      if(selectedId===null){selectedId=id;toast('Destino seleccionado. Ahora pulsa el origen.');render();return;}
+      const a=device(selectedId),b=device(id);
+      if(a.id===b.id){toast('Elige otro dispositivo como destino');return;}
+      const allowed=firewallAllows(a,b);
+      const success=a.online&&b.online&&pathExists(a.id,b.id)&&allowed;
+      log(`PING ${a.name} (${a.ip}) → ${b.name} (${b.ip}): ${success?'respuesta simulada, 4 paquetes recibidos':!allowed?'bloqueado por regla de firewall':'sin respuesta (sin ruta o equipo offline)'}.`,success?'good':'bad');
+      toast(success?'Ping simulado correcto':'Ping fallido o bloqueado');pingMode=false;document.getElementById('pingBtn').classList.remove('primary');document.getElementById('toolHint').textContent='Ping finalizado. Selecciona equipos y vuelve a probar.';render();return;
+    }
+    selectedId=id;render();
+  }
+  function firewallAllows(a,b){
+    // Reglas de ejemplo: las políticas son didácticas, no un firewall real.
+    const isExternal=a.type==='cloud'||b.type==='cloud';
+    const direction=isExternal?'internet':(b.type==='server'?'lan':'any');
+    const relevant=rules.filter(r=>r.enabled&&(r.direction==='any'||r.direction===direction));
+    if(!relevant.length)return true;
+    return relevant[0].action==='allow';
+  }
+  document.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{
+    const type=btn.dataset.add,idx=devices.length;
+    const d={id:nextId++,type,name:labels[type]+' '+(devices.filter(x=>x.type===type).length+1),ip:type==='cloud'?'203.0.113.'+(idx+2):'192.168.1.'+(30+idx),role:labels[type],online:true,x:22+(idx*17)%60,y:30+(idx*23)%55};
+    devices.push(d);selectedId=d.id;log(`Dispositivo añadido: ${d.name} (${d.ip}).`,'good');render();toast(labels[type]+' añadido');
+  }));
+  document.getElementById('connectBtn').addEventListener('click',()=>{
+    connectMode=!connectMode;pingMode=false;connectFirst=null;
+    document.getElementById('connectBtn').classList.toggle('primary',connectMode);document.getElementById('pingBtn').classList.remove('primary');
+    document.getElementById('toolHint').textContent=connectMode?'Modo conexión: selecciona dos dispositivos del mapa.':'Modo conexión cancelado.';
+    toast(connectMode?'Selecciona dos nodos para conectarlos':'Modo cancelado');
+  });
+  document.getElementById('pingBtn').addEventListener('click',()=>{
+    pingMode=!pingMode;connectMode=false;connectFirst=null;
+    document.getElementById('pingBtn').classList.toggle('primary',pingMode);document.getElementById('connectBtn').classList.remove('primary');
+    selectedId=null;renderInspector();
+    document.getElementById('toolHint').textContent=pingMode?'Selecciona el origen y después el destino del ping.':'Modo ping cancelado.';
+    toast(pingMode?'Selecciona el primer equipo':'Modo cancelado');
+  });
+  document.getElementById('scanBtn').addEventListener('click',()=>{
+    const offline=devices.filter(d=>!d.online),isolated=devices.filter(d=>d.online&&!links.some(l=>(l.a===d.id&&device(l.b)?.online)||(l.b===d.id&&device(l.a)?.online)));
+    log(`Diagnóstico completado: ${devices.length} dispositivos, ${links.length} enlaces, ${offline.length} offline, ${isolated.length} sin enlaces activos.`,offline.length||isolated.length?'warn':'good');
+    toast(offline.length||isolated.length?'Diagnóstico: se encontraron incidencias':'Diagnóstico completado: sin incidencias');
+  });
+  document.getElementById('addRuleBtn').addEventListener('click',()=>{
+    const direction=document.getElementById('ruleDirection').value,action=document.getElementById('ruleAction').value;
+    rules.push({id:Math.max(0,...rules.map(r=>r.id))+1,direction,action,enabled:true,label:`Regla personalizada: ${action==='allow'?'permitir':'bloquear'} tráfico`});
+    log(`Nueva regla simulada: ${action==='allow'?'permitir':'bloquear'} (${direction}).`,action==='deny'?'warn':'good');renderRules();renderMetrics();toast('Regla añadida');
+  });
+  document.getElementById('clearLogsBtn').addEventListener('click',()=>{logs=[];renderLogs();});
+  document.getElementById('resetBtn').addEventListener('click',()=>{if(!confirm('¿Restablecer la topología y las reglas iniciales?'))return;location.reload();});
+  document.getElementById('exportBtn').addEventListener('click',()=>{
+    const data={app:'NetGuard Lab',version:1,exportedAt:new Date().toISOString(),devices,links,rules};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='netguard-topology.json';a.click();URL.revokeObjectURL(url);log('Topología exportada a JSON.','good');
+  });
+  window.addEventListener('resize',renderLinks);
+  log('Laboratorio iniciado. Todos los dispositivos están online.','good');
+  render();
+})();
+</script>
+</body>
+</html>
